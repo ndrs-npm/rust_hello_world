@@ -17,15 +17,25 @@ While the instructions should work on most Debian-based systems, you may encount
 Now that we've clarified the testing environment, let's proceed with installing Rust:
 
 1. Open terminal.
-1. Run the following command to download and run the Rust installation script:
+1. Install Rust using `apt`:
 
     ```bash
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    sudo apt update
+    sudo apt install -y rustc cargo
     ```
 
-1. The script will start and present you with installation options. For most users, the default option `(1)` is suitable. *Press Enter* to proceed with the default installation.
-1. Wait for the installation to complete. This may take a few minutes depending on your internet connection.
-1. Once the installation is finished, you'll see a message saying that Rust is installed now.
+    This will install Rust and Cargo, the package manager and build tool for Rust, using the `apt` package manager.
+
+    > Alternatively, you can use the Rust installation script:
+    >
+    >```bash
+    >curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    >```
+    >
+    >- When prompted, choose the default option `(1)` to proceed with the installation.
+    >- Wait for the installation to complete. This may take a few minutes depending on your internet connection.
+    >- Once the installation is finished, you'll see a message indicating that Rust is installed and ready to use.
+
 1. To start using Rust, you need to reload your shell. You can do this by running:
 
     ```bash
@@ -90,3 +100,87 @@ Now that Rust is installed, let's create a simple "Hello, World!" program:
     ```
 
 Congratulations! You've successfully installed Rust and created a basic "Hello, World!" project on Debian. You're now ready to explore more complex Rust applications and libraries.
+
+___
+
+## Cross-Compilation Guide
+
+This guide will walk you through cross-compiling a Rust program from an x86-64 machine to an ARM64 (aarch64) Linux target.
+
+### Discalimer: Testing Environment
+
+This guide has been tested on the following setup:
+
+- Host Machine: x86-64 running Windows Subsystem for Linux (WSL) with Debian 11 (bullseye)
+- Target Machine: aarch64 running Debian 11 (bullseye)
+
+While the instructions should work on most x86-64 machines, you may need to adjust certain steps based on your specific setup.
+
+### Prerequisites
+
+- An x86-64 machine with Rust already installed and working
+- Basic Rust project (hello world) already created and tested
+
+### Steps to Cross-Compile
+
+1. Install the ARM64 toolchain:
+
+    For Debian-based systems (including Ubuntu), you can install the cross-compiler using apt:
+
+    ```bash
+    sudo apt update
+    sudo apt install -y gcc-aarch64-linux-gnu
+    ```
+
+    > Make sure that the toolchain is installed correctly by running `aarch64-linux-gnu-gcc --version`.
+    > If you installed the compiler via apt, it should already be in your PATH. Otherwise, add the cross-compiler's `bin` directory to your system's PATH:
+
+1. In your existing Rust project directory, create a new folder named `.cargo` and create a configuration file named `config.toml` inside it:
+
+    ```bash
+    mkdir -p .cargo
+    touch .cargo/config.toml
+    ```
+
+1. Edit the configuration file `.cargo/config.toml` and add the following lines to specify the linker for the ARM64 target:
+
+    ```toml
+    [target.aarch64-unknown-linux-gnu]
+    linker = "aarch64-linux-gnu-gcc"
+    ```
+
+1. Add the ARM64 target to the Rust toolchain:
+
+    ```bash
+    rustup target add aarch64-unknown-linux-gnu
+    ```
+
+    > For a list of available targets, you can run `rustup target list`.
+
+1. Cross-compile your Rust project for ARM64:
+
+    ```bash
+    cargo build --target aarch64-unknown-linux-gnu --release
+    ```
+
+    This command will compile your project for the ARM64 target and create a release build in the `target/aarch64-unknown-linux-gnu/release/` directory.
+
+1. Transfer the compiled binary to the ARM64 machine:
+
+    You can use any method to transfer the binary to the ARM64 machine, but in this example, we'll use `scp` to copy the binary over SSH to the ARM64 machine.
+
+    ```bash
+    scp target/aarch64-unknown-linux-gnu/release/hello_world user@arm64-machine:/path/to/destination
+    ```
+
+    > Replace `user@arm64-machine` with your ARM64 machine's SSH username and address, and `/path/to/destination` with the desired location on the ARM64 machine.
+
+1. Run the binary on the ARM64 machine:
+
+    **On your ARM64 machine**, navigate to the directory where you copied the binary and run it:
+
+    ```bash
+    ./hello_world
+    ```
+
+Congratulations! You've successfully cross-compiled your Rust program from an x86-64 machine to ARM64 Linux. This process can be adapted for other target platforms by changing the target triple and using appropriate toolchains. Always test your cross-compiled binary on the target system to ensure compatibility.
